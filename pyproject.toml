@@ -1,0 +1,21 @@
+[project]
+name = "bcdl"
+version = "0.1.0"
+description = "Download all items from a Bandcamp user's collection"
+requires-python = ">=3.12"
+dependencies = [
+    "requests",
+    "beautifulsoup4",
+]
+
+[project.scripts]
+bcdl = "bcdl:main"
+
+[dependency-groups]
+dev = [
+    "pytest",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
