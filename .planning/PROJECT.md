@@ -20,7 +20,7 @@ Any Bandcamp buyer can sync their full collection — or just new purchases — 
 
 ### Active
 
-- [ ] Resume interrupted downloads using a local state file (skip already-downloaded items)
+- [x] Resume interrupted downloads using a local state file (skip already-downloaded items) — Validated in Phase 1: State Foundation
 - [ ] Incremental sync — only download items not previously downloaded
 - [ ] Targeted download — filter by artist or album name without downloading entire collection
 - [ ] Format selection via `--format` flag passed through to yt-dlp
@@ -39,10 +39,11 @@ Any Bandcamp buyer can sync their full collection — or just new purchases — 
 
 ## Context
 
-- Existing codebase: `bcdl.py` (186 lines), functional but not production-hardened
-- Known concerns: no retry logic, no resume, subprocess errors not captured, `main()` untested
+- Existing codebase: `bcdl.py` (~220 lines), Phase 1 complete — state tracking added
+- Phase 1 complete: yt-dlp detection, `.bcdl/{username}.json` state file (keyed by `sale_item_id`), atomic writes, skip-on-rerun — 26 tests passing
+- Known remaining concerns: no retry logic, yt-dlp output not captured, no format selection
 - Currently managed with uv; entry point already defined in `pyproject.toml`
-- Tests use pytest + unittest.mock; 14 unit tests covering core functions (not `main()`)
+- Tests use pytest + unittest.mock; 26 unit tests (14 original + 12 new from Phase 1)
 
 ## Constraints
 
@@ -54,9 +55,9 @@ Any Bandcamp buyer can sync their full collection — or just new purchases — 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| State file for resume tracking | Simpler than disk scanning, works even if download dir changes | — Pending |
+| State file for resume tracking | Simpler than disk scanning, works even if download dir changes | ✓ Implemented (Phase 1) |
 | yt-dlp as download backend | Handles auth, format selection, retries at download layer | ✓ Good |
 | uv for project management | Modern, fast, already in use | ✓ Good |
 
 ---
-*Last updated: 2026-03-19 after initialization*
+*Last updated: 2026-03-19 after Phase 1: State Foundation*
