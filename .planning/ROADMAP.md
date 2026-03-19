@@ -27,7 +27,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. A `.bcdl/{username}.json` state file is created after a successful download run and contains the downloaded items keyed by stable numeric ID
   3. State file writes survive Ctrl-C without corruption — a partial run leaves the file readable, not truncated
   4. Running `bcdl` a second time skips items already in the state file and prints a skip message per item
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 01-01-PLAN.md — TDD: state functions (load/save), yt-dlp detection, state-aware download loop
 
 ### Phase 2: Download Reliability
 **Goal**: Downloads survive transient Bandcamp failures without user intervention, and yt-dlp output is replaced by clean per-item status lines
@@ -57,6 +59,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. State Foundation | 0/? | Not started | - |
+| 1. State Foundation | 0/1 | Not started | - |
 | 2. Download Reliability | 0/? | Not started | - |
 | 3. Feature Completion and Release | 0/? | Not started | - |
