@@ -61,16 +61,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RELY-01 | Phase ? | Pending |
-| RESM-01 | Phase ? | Pending |
-| DCTL-01 | Phase ? | Pending |
-| DOCS-01 | Phase ? | Pending |
+| RELY-01 | Phase 2 | Pending |
+| RESM-01 | Phase 1 | Pending |
+| DCTL-01 | Phase 3 | Pending |
+| DOCS-01 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 4 total
-- Mapped to phases: 0
-- Unmapped: 4 ⚠️
+- Mapped to phases: 4
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-19*
-*Last updated: 2026-03-19 after initial definition*
+*Last updated: 2026-03-19 after roadmap creation*
