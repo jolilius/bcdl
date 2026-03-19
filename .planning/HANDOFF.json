@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-03-19T12:37:30.183Z",
+  "phase": "01",
+  "phase_name": "state-foundation",
+  "phase_dir": ".planning/phases/01-state-foundation",
+  "plan": 1,
+  "task": 2,
+  "total_tasks": 2,
+  "status": "complete",
+  "completed_tasks": [
+    {"id": 1, "name": "Write failing tests (RED) for all 4 success criteria", "status": "done", "commit": "0399e4f"},
+    {"id": 2, "name": "Implement load_state, save_state, yt-dlp detection, skip loop (GREEN)", "status": "done", "commit": "67bd213"}
+  ],
+  "remaining_tasks": [],
+  "blockers": [],
+  "human_actions_pending": [
+    {
+      "action": "Manual verification of sale_item_id field in live Bandcamp API responses",
+      "context": "The field name 'sale_item_id' was locked by user decision but not independently verified against live API. The guard (item.get('sale_item_id', '')) handles missing field gracefully.",
+      "blocking": false
+    }
+  ],
+  "decisions": [
+    {"decision": "State key: sale_item_id (string)", "rationale": "User-confirmed in discuss-phase. Stable numeric ID tied to purchase record.", "phase": "01"},
+    {"decision": "State value: {artist, title, url, downloaded_at}", "rationale": "Minimal metadata — enough to show skip messages and debug without re-fetching API.", "phase": "01"},
+    {"decision": "Write state after successful download only", "rationale": "Failed items retry on next run. Only write on yt-dlp exit code 0.", "phase": "01"},
+    {"decision": "Skip output: [skip] Artist — Title", "rationale": "One line per skipped item, visually distinct from download lines.", "phase": "01"},
+    {"decision": "yt-dlp detection at startup via shutil.which", "rationale": "Fail fast before any network calls. No subprocess overhead.", "phase": "01"},
+    {"decision": "StateManager as module-level functions in bcdl.py (not a class, not new module)", "rationale": "186-line codebase — a new module would be over-engineered.", "phase": "01"}
+  ],
+  "uncommitted_files": [".planning/config.json"],
+  "next_action": "Run /gsd:discuss-phase 2 to capture context for Phase 2: Download Reliability (retry logic + yt-dlp output capture). /clear first for fresh context window.",
+  "context_notes": "Phase 1 complete. Full session: discuss-phase → plan-phase → execute-phase. 26/26 tests passing. RESM-01 satisfied. VERIFICATION.md shows 6/6 must-haves. Phase 2 depends on Phase 1 and requires retry logic (HTTP 429/5xx with backoff) + clean per-item terminal output replacing raw yt-dlp output."
+}
