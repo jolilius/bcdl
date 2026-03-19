@@ -10,9 +10,14 @@ Usage:
 import argparse
 import csv
 import json
+import os
+import shutil
 import sys
+import tempfile
 import time
 import subprocess
+from datetime import datetime, timezone
+from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
@@ -27,6 +32,32 @@ HEADERS = {
         "Chrome/120.0.0.0 Safari/537.36"
     )
 }
+
+
+def load_state(path: Path) -> dict:
+    """Load state file. Returns {} on missing file or corrupt JSON (with stderr warning)."""
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}
+    except (json.JSONDecodeError, OSError) as e:
+        print(f"Warning: state file unreadable ({e}), starting fresh", file=sys.stderr)
+        return {}
+
+
+def save_state(state: dict, path: Path) -> None:
+    """Atomic write: NamedTemporaryFile(dir=path.parent) + os.replace. Creates parent dir if needed."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        dir=path.parent,
+        delete=False,
+        suffix=".tmp",
+        encoding="utf-8",
+    ) as tf:
+        json.dump(state, tf, indent=2)
+        tmp_path = tf.name
+    os.replace(tmp_path, path)
 
 
 def get_page_data(username: str) -> dict:
@@ -141,6 +172,13 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    if shutil.which("yt-dlp") is None:
+        print(
+            "Error: yt-dlp is not installed. Install it with: pip install yt-dlp",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     print(f"Fetching collection for: {args.username}")
     try:
         items = get_all_collection_items(args.username)
@@ -161,15 +199,33 @@ def main() -> None:
         export_csv(items, args.export_csv)
         sys.exit(0)
 
+    state_path = Path(".bcdl") / f"{args.username}.json"
+    state = load_state(state_path)
 
     failed: list[dict] = []
     for i, item in enumerate(items, 1):
+        item_id = str(item.get("sale_item_id", ""))
+        artist = item.get("band_name") or "Unknown Artist"
+        title = item.get("album_title") or item.get("item_title") or "Unknown"
+
+        if item_id and item_id in state:
+            print(f"[skip] {artist} \u2014 {title}")
+            continue
+
         success = download_item(item, i, len(items), cookies_file=args.cookies)
         if not success:
             failed.append(item)
+        elif item_id:
+            state[item_id] = {
+                "artist": artist,
+                "title": title,
+                "url": item.get("item_url") or item.get("tralbum_url") or "",
+                "downloaded_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            }
+            save_state(state, state_path)
 
         if i < len(items):
-            print(f"  Waiting {args.delay}s…\n")
+            print(f"  Waiting {args.delay}s\u2026\n")
             time.sleep(args.delay)
 
     print(f"\nDone — {len(items) - len(failed)}/{len(items)} downloaded successfully.")
