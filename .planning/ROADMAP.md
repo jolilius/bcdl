@@ -12,7 +12,7 @@ bcdl is a functional but not production-hardened CLI tool. The roadmap hardens i
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: State Foundation** - Add StateManager and harden existing error paths before any new features
+- [x] **Phase 1: State Foundation** - Add StateManager and harden existing error paths before any new features (completed 2026-03-19)
 - [ ] **Phase 2: Download Reliability** - Retry logic and yt-dlp output capture ship together as one coupled unit
 - [ ] **Phase 3: Feature Completion and Release** - Format selection, resume wiring, README, and packaging verification
 
@@ -27,7 +27,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. A `.bcdl/{username}.json` state file is created after a successful download run and contains the downloaded items keyed by stable numeric ID
   3. State file writes survive Ctrl-C without corruption — a partial run leaves the file readable, not truncated
   4. Running `bcdl` a second time skips items already in the state file and prints a skip message per item
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 01-01-PLAN.md — TDD: state functions (load/save), yt-dlp detection, state-aware download loop
 
@@ -59,6 +59,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. State Foundation | 0/1 | Not started | - |
+| 1. State Foundation | 1/1 | Complete   | 2026-03-19 |
 | 2. Download Reliability | 0/? | Not started | - |
 | 3. Feature Completion and Release | 0/? | Not started | - |

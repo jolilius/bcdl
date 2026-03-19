@@ -11,7 +11,7 @@
 
 ### Resume & State
 
-- [ ] **RESM-01**: Tool tracks downloaded items in a local state file so already-downloaded items are skipped on subsequent runs
+- [x] **RESM-01**: Tool tracks downloaded items in a local state file so already-downloaded items are skipped on subsequent runs
 
 ### Download Control
 
@@ -62,7 +62,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | RELY-01 | Phase 2 | Pending |
-| RESM-01 | Phase 1 | Pending |
+| RESM-01 | Phase 1 | Complete |
 | DCTL-01 | Phase 3 | Pending |
 | DOCS-01 | Phase 3 | Pending |
 
