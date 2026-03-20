@@ -40,7 +40,10 @@ Plans:
   2. A 404 or auth failure (401/403) is not retried — it fails immediately with a clear error
   3. The terminal shows one status line per item (artist — title: OK / FAILED) instead of raw yt-dlp output
   4. A final summary shows total downloaded, skipped, and failed counts after every run
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 02-01-PLAN.md — Error classification helpers, subprocess capture, and test foundation (TDD)
+- [ ] 02-02-PLAN.md — Retry wrapper, main() refactor, clean output, and final summary
 
 ### Phase 3: Feature Completion and Release
 **Goal**: Users can select audio format and direct output location, the tool is documented for non-developer users, and the PyPI package installs and runs correctly
@@ -55,10 +58,10 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3
+Phases execute in numeric order: 1 -> 2 -> 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. State Foundation | 1/1 | Complete    | 2026-03-19 |
-| 2. Download Reliability | 0/? | Not started | - |
+| 2. Download Reliability | 0/2 | Planned | - |
 | 3. Feature Completion and Release | 0/? | Not started | - |
