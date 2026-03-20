@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 02-download-reliability-01-PLAN.md
-last_updated: "2026-03-20T11:00:03.148Z"
+stopped_at: "Paused at checkpoint: 02-download-reliability-02-PLAN.md Task 2 (human-verify)"
+last_updated: "2026-03-20T11:05:26.526Z"
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -48,6 +48,7 @@ Plan: 1 of 2
 *Updated after each plan completion*
 | Phase 01-state-foundation P01 | 2 | 2 tasks | 2 files |
 | Phase 02-download-reliability P01 | 2 | 1 tasks | 2 files |
+| Phase 02-download-reliability P02 | 3 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,7 @@ Recent decisions affecting current work:
 - [Phase 01-state-foundation]: NamedTemporaryFile dir=path.parent mandatory to avoid cross-filesystem os.replace failure
 - [Phase 02-download-reliability]: TRANSIENT_PATTERNS checked after PERMANENT_PATTERNS so mixed-signal stderr (403 + 429) returns permanent
 - [Phase 02-download-reliability]: HTTP Error 5 prefix pattern covers all 5xx codes (500/502/503/504) with a single TRANSIENT_PATTERNS entry
+- [Phase 02-download-reliability]: _backoff_delay returns float so retry notice can print it; test patches need return_value=float to avoid :.0f format TypeError on MagicMock
 
 ### Pending Todos
 
@@ -77,6 +79,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T11:00:03.145Z
-Stopped at: Completed 02-download-reliability-01-PLAN.md
+Last session: 2026-03-20T11:05:26.523Z
+Stopped at: Paused at checkpoint: 02-download-reliability-02-PLAN.md Task 2 (human-verify)
 Resume file: None
