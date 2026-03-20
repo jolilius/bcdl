@@ -189,6 +189,7 @@ class TestExportCsv:
 class TestDownloadItem:
     def test_calls_yt_dlp_with_url(self):
         proc = MagicMock(returncode=0)
+        proc.stderr = ""
         with patch("subprocess.run", return_value=proc) as mock_run:
             result = bcdl.download_item(ITEM_A, 1, 3)
         assert result is True
@@ -198,6 +199,7 @@ class TestDownloadItem:
 
     def test_passes_cookies_flag(self):
         proc = MagicMock(returncode=0)
+        proc.stderr = ""
         with patch("subprocess.run", return_value=proc) as mock_run:
             bcdl.download_item(ITEM_A, 1, 3, cookies_file="cookies.txt")
         cmd = mock_run.call_args.args[0]
@@ -206,6 +208,7 @@ class TestDownloadItem:
 
     def test_returns_false_on_yt_dlp_failure(self):
         proc = MagicMock(returncode=1)
+        proc.stderr = ""
         with patch("subprocess.run", return_value=proc):
             result = bcdl.download_item(ITEM_A, 1, 3)
         assert result is False
@@ -218,6 +221,7 @@ class TestDownloadItem:
 
     def test_uses_tralbum_url_fallback(self):
         proc = MagicMock(returncode=0)
+        proc.stderr = ""
         with patch("subprocess.run", return_value=proc) as mock_run:
             bcdl.download_item(ITEM_B, 1, 3)
         cmd = mock_run.call_args.args[0]
@@ -367,3 +371,99 @@ class TestStateIntegration:
         if state_file.exists():
             state = json.loads(state_file.read_text(encoding="utf-8"))
             assert "11111111" not in state
+
+
+# ---------------------------------------------------------------------------
+# classify_yt_dlp_error
+# ---------------------------------------------------------------------------
+
+class TestClassifyYtdlpError:
+    def test_transient_429(self):
+        assert bcdl.classify_yt_dlp_error("ERROR: HTTP Error 429") == "transient"
+
+    def test_transient_5xx(self):
+        assert bcdl.classify_yt_dlp_error("ERROR: HTTP Error 503") == "transient"
+
+    def test_transient_connection_reset(self):
+        assert bcdl.classify_yt_dlp_error("Connection reset by peer") == "transient"
+
+    def test_transient_timeout(self):
+        assert bcdl.classify_yt_dlp_error("timed out") == "transient"
+
+    def test_transient_remote_disconnected(self):
+        assert bcdl.classify_yt_dlp_error("RemoteDisconnected") == "transient"
+
+    def test_permanent_404(self):
+        assert bcdl.classify_yt_dlp_error("ERROR: HTTP Error 404: Not Found") == "permanent"
+
+    def test_permanent_401(self):
+        assert bcdl.classify_yt_dlp_error("ERROR: HTTP Error 401") == "permanent"
+
+    def test_permanent_403(self):
+        assert bcdl.classify_yt_dlp_error("ERROR: HTTP Error 403") == "permanent"
+
+    def test_permanent_unsupported(self):
+        assert bcdl.classify_yt_dlp_error("ERROR: Unsupported URL") == "permanent"
+
+    def test_unknown_error(self):
+        assert bcdl.classify_yt_dlp_error("some random error text") == "unknown"
+
+    def test_empty_stderr(self):
+        assert bcdl.classify_yt_dlp_error("") == "unknown"
+
+    def test_permanent_checked_before_transient(self):
+        assert bcdl.classify_yt_dlp_error("HTTP Error 403\nHTTP Error 429") == "permanent"
+
+    def test_transient_500(self):
+        assert bcdl.classify_yt_dlp_error("ERROR: HTTP Error 500") == "transient"
+
+
+# ---------------------------------------------------------------------------
+# _extract_error_summary
+# ---------------------------------------------------------------------------
+
+class TestExtractErrorSummary:
+    def test_extracts_error_line(self):
+        result = bcdl._extract_error_summary("ERROR: HTTP Error 429 Too Many Requests")
+        assert result == "HTTP Error 429 Too Many Requests"
+
+    def test_truncates_long_lines(self):
+        result = bcdl._extract_error_summary("ERROR: " + "x" * 200)
+        assert len(result) <= 80
+
+    def test_no_error_line(self):
+        result = bcdl._extract_error_summary("some output without ERROR prefix")
+        assert result == "unknown error"
+
+    def test_empty_stderr(self):
+        result = bcdl._extract_error_summary("")
+        assert result == "unknown error"
+
+
+# ---------------------------------------------------------------------------
+# _run_yt_dlp
+# ---------------------------------------------------------------------------
+
+class TestRunYtDlp:
+    def test_returns_returncode_and_stderr(self):
+        mock_result = MagicMock(returncode=1, stderr="ERROR: HTTP Error 404")
+        with patch("subprocess.run", return_value=mock_result):
+            rc, stderr = bcdl._run_yt_dlp(["yt-dlp", "url"])
+        assert rc == 1
+        assert stderr == "ERROR: HTTP Error 404"
+
+    def test_passes_devnull_and_pipe(self):
+        mock_result = MagicMock(returncode=0, stderr="")
+        with patch("subprocess.run", return_value=mock_result) as mock_run:
+            bcdl._run_yt_dlp(["yt-dlp", "url"])
+        call_kwargs = mock_run.call_args.kwargs
+        assert call_kwargs.get("stdout") == subprocess.DEVNULL
+        assert call_kwargs.get("stderr") == subprocess.PIPE
+        assert call_kwargs.get("text") is True
+
+    def test_success_returns_zero_empty_stderr(self):
+        mock_result = MagicMock(returncode=0, stderr="")
+        with patch("subprocess.run", return_value=mock_result):
+            rc, stderr = bcdl._run_yt_dlp(["yt-dlp", "url"])
+        assert rc == 0
+        assert stderr == ""

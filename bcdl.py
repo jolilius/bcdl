@@ -33,6 +33,51 @@ HEADERS = {
     )
 }
 
+TRANSIENT_PATTERNS = [
+    "HTTP Error 429",
+    "HTTP Error 5",      # covers 500/502/503/504
+    "Connection reset",
+    "timed out",
+    "RemoteDisconnected",
+]
+PERMANENT_PATTERNS = [
+    "HTTP Error 404",
+    "HTTP Error 401",
+    "HTTP Error 403",
+    "Unsupported URL",
+]
+
+
+def classify_yt_dlp_error(stderr: str) -> str:
+    """Classify yt-dlp stderr as 'transient', 'permanent', or 'unknown'.
+    Permanent patterns checked first — a 403 mixed with 429 is permanent."""
+    for pattern in PERMANENT_PATTERNS:
+        if pattern in stderr:
+            return "permanent"
+    for pattern in TRANSIENT_PATTERNS:
+        if pattern in stderr:
+            return "transient"
+    return "unknown"
+
+
+def _run_yt_dlp(cmd: list[str]) -> tuple[int, str]:
+    """Run yt-dlp, suppress stdout, capture stderr. Returns (returncode, stderr)."""
+    result = subprocess.run(
+        cmd,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    return result.returncode, result.stderr
+
+
+def _extract_error_summary(stderr: str) -> str:
+    """Extract first ERROR: line from stderr for display, truncated to 80 chars."""
+    for line in stderr.splitlines():
+        if line.startswith("ERROR:"):
+            return line[7:].strip()[:80]
+    return "unknown error"
+
 
 def load_state(path: Path) -> dict:
     """Load state file. Returns {} on missing file or corrupt JSON (with stderr warning)."""
