@@ -7,7 +7,7 @@
 
 ### Reliability
 
-- [ ] **RELY-01**: Tool retries failed requests automatically on transient failures (HTTP 429, 5xx, timeouts) without user intervention
+- [x] **RELY-01**: Tool retries failed requests automatically on transient failures (HTTP 429, 5xx, timeouts) without user intervention
 
 ### Resume & State
 
@@ -61,7 +61,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RELY-01 | Phase 2 | Pending |
+| RELY-01 | Phase 2 | Complete |
 | RESM-01 | Phase 1 | Complete |
 | DCTL-01 | Phase 3 | Pending |
 | DOCS-01 | Phase 3 | Pending |
