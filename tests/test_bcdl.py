@@ -492,7 +492,7 @@ class TestRetryLogic:
 
     def test_transient_retry_then_success(self):
         with patch("bcdl._run_yt_dlp", side_effect=[(1, "ERROR: HTTP Error 429"), (0, "")]) as mock_run:
-            with patch("bcdl._backoff_delay"):
+            with patch("bcdl._backoff_delay", return_value=5.0):
                 success, reason = bcdl.download_with_retry(ITEM_A_WITH_ID, 1, 3)
         assert success is True
         assert reason == ""
@@ -516,7 +516,7 @@ class TestRetryLogic:
 
     def test_max_retries_exhausted(self):
         with patch("bcdl._run_yt_dlp", return_value=(1, "ERROR: HTTP Error 429")) as mock_run:
-            with patch("bcdl._backoff_delay"):
+            with patch("bcdl._backoff_delay", return_value=5.0):
                 success, reason = bcdl.download_with_retry(ITEM_A_WITH_ID, 1, 3)
         assert success is False
         assert "retried 3x" in reason

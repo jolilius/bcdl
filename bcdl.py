@@ -11,6 +11,7 @@ import argparse
 import csv
 import json
 import os
+import random
 import shutil
 import sys
 import tempfile
@@ -170,6 +171,65 @@ def export_csv(items: list[dict], path: str) -> None:
     print(f"Saved {len(items)} item(s) to {path}")
 
 
+def _backoff_delay(attempt: int, base: float = 5.0, cap: float = 60.0) -> float:
+    """Sleep base * 2^attempt seconds, capped, with +25% jitter. Returns actual delay."""
+    delay = min(base * (2 ** attempt), cap)
+    jitter = delay * 0.25 * random.random()
+    actual = delay + jitter
+    time.sleep(actual)
+    return actual
+
+
+def download_with_retry(
+    item: dict,
+    index: int,
+    total: int,
+    cookies_file: str | None = None,
+    max_retries: int = 3,
+    base_delay: float = 5.0,
+) -> tuple[bool, str]:
+    """Download item with retry on transient errors.
+    Returns (success, error_reason). error_reason is "" on success."""
+    url = item.get("item_url") or item.get("tralbum_url")
+    artist = item.get("band_name") or "Unknown Artist"
+    title = item.get("album_title") or item.get("item_title") or "Unknown"
+
+    if not url:
+        return False, "no URL"
+
+    cmd = ["yt-dlp", "--quiet", "--no-progress", url]
+    if cookies_file:
+        cmd += ["--cookies", cookies_file]
+
+    width = len(str(total))
+    print(f"[{index:{width}}/{total}] {artist} \u2014 {title}: ", end="", flush=True)
+
+    for attempt in range(max_retries + 1):
+        returncode, stderr = _run_yt_dlp(cmd)
+
+        if returncode == 0:
+            print("OK")
+            return True, ""
+
+        error_class = classify_yt_dlp_error(stderr)
+
+        if error_class in ("permanent", "unknown"):
+            reason = _extract_error_summary(stderr)
+            print(f"FAILED ({reason})")
+            return False, reason
+
+        # transient — retry with backoff
+        if attempt < max_retries:
+            actual_delay = _backoff_delay(attempt, base_delay)
+            print(f"\n  [retry {attempt + 1}/{max_retries}] waiting {actual_delay:.0f}s\u2026", end="", flush=True)
+        else:
+            reason = _extract_error_summary(stderr)
+            print(f"FAILED (retried {max_retries}x: {reason})")
+            return False, f"retried {max_retries}x: {reason}"
+
+    return False, "max retries exceeded"  # unreachable but satisfies type checker
+
+
 def download_item(
     item: dict, index: int, total: int, cookies_file: str | None = None
 ) -> bool:
@@ -247,7 +307,8 @@ def main() -> None:
     state_path = Path(".bcdl") / f"{args.username}.json"
     state = load_state(state_path)
 
-    failed: list[dict] = []
+    skipped = 0
+    failed: list[tuple[dict, str]] = []
     for i, item in enumerate(items, 1):
         item_id = str(item.get("sale_item_id", ""))
         artist = item.get("band_name") or "Unknown Artist"
@@ -255,11 +316,12 @@ def main() -> None:
 
         if item_id and item_id in state:
             print(f"[skip] {artist} \u2014 {title}")
+            skipped += 1
             continue
 
-        success = download_item(item, i, len(items), cookies_file=args.cookies)
+        success, reason = download_with_retry(item, i, len(items), cookies_file=args.cookies)
         if not success:
-            failed.append(item)
+            failed.append((item, reason))
         elif item_id:
             state[item_id] = {
                 "artist": artist,
@@ -270,16 +332,16 @@ def main() -> None:
             save_state(state, state_path)
 
         if i < len(items):
-            print(f"  Waiting {args.delay}s\u2026\n")
             time.sleep(args.delay)
 
-    print(f"\nDone — {len(items) - len(failed)}/{len(items)} downloaded successfully.")
+    downloaded = len(items) - len(failed) - skipped
+    print(f"\nDone: {downloaded} downloaded, {skipped} skipped, {len(failed)} failed.")
     if failed:
         print("Failed items:")
-        for item in failed:
+        for item, reason in failed:
             title = item.get("album_title") or item.get("item_title") or "Unknown"
             artist = item.get("band_name") or "Unknown Artist"
-            print(f"  - {artist} — {title}")
+            print(f"  - {artist} \u2014 {title} ({reason})")
 
 
 if __name__ == "__main__":
