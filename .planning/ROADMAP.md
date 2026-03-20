@@ -53,7 +53,11 @@ Plans:
   1. `bcdl --format flac username` downloads in FLAC where available; `--format mp3` downloads in MP3
   2. `pipx install bcdl` installs the tool and `bcdl --help` works from a clean environment
   3. The README documents every flag with a concrete usage example, and a non-developer Bandcamp user can follow it to completion without needing to read the source
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 03-01-PLAN.md — TDD: --format flag (tests first, then implementation)
+- [ ] 03-02-PLAN.md — README rewrite for non-developer users + GitHub Actions CI
+- [ ] 03-03-PLAN.md — Packaging smoke test (wheel build + pipx install verification)
 
 ## Progress
 
@@ -64,4 +68,4 @@ Phases execute in numeric order: 1 -> 2 -> 3
 |-------|----------------|--------|-----------|
 | 1. State Foundation | 1/1 | Complete    | 2026-03-19 |
 | 2. Download Reliability | 2/2 | Complete   | 2026-03-20 |
-| 3. Feature Completion and Release | 0/? | Not started | - |
+| 3. Feature Completion and Release | 0/3 | Not started | - |
