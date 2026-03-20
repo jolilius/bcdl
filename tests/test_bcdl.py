@@ -11,6 +11,14 @@ import requests
 
 import bcdl
 
+ITEM_C_WITH_ID = {
+    "band_name": "Artist Three",
+    "album_title": "Album Three",
+    "item_url": "https://artistthree.bandcamp.com/album/album-three",
+    "tralbum_type": "a",
+    "sale_item_id": 33333333,
+}
+
 
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
@@ -314,7 +322,7 @@ class TestStateIntegration:
         with patch("shutil.which", return_value="/usr/bin/yt-dlp"):
             with patch("sys.argv", ["bcdl", "testuser"]):
                 with patch("bcdl.get_all_collection_items", return_value=[ITEM_A_WITH_ID]):
-                    with patch("bcdl.download_item", return_value=True):
+                    with patch("bcdl.download_with_retry", return_value=(True, "")):
                         bcdl.main()
         state_file = tmp_path / ".bcdl" / "testuser.json"
         assert state_file.exists()
@@ -341,7 +349,7 @@ class TestStateIntegration:
         with patch("shutil.which", return_value="/usr/bin/yt-dlp"):
             with patch("sys.argv", ["bcdl", "testuser"]):
                 with patch("bcdl.get_all_collection_items", return_value=[ITEM_A_WITH_ID]):
-                    with patch("bcdl.download_item") as mock_download:
+                    with patch("bcdl.download_with_retry") as mock_download:
                         bcdl.main()
         mock_download.assert_not_called()
         captured = capsys.readouterr()
@@ -352,7 +360,7 @@ class TestStateIntegration:
         with patch("shutil.which", return_value="/usr/bin/yt-dlp"):
             with patch("sys.argv", ["bcdl", "testuser"]):
                 with patch("bcdl.get_all_collection_items", return_value=[ITEM_NO_SALE_ID]):
-                    with patch("bcdl.download_item", return_value=True):
+                    with patch("bcdl.download_with_retry", return_value=(True, "")):
                         bcdl.main()
         state_file = tmp_path / ".bcdl" / "testuser.json"
         if state_file.exists():
@@ -365,7 +373,7 @@ class TestStateIntegration:
         with patch("shutil.which", return_value="/usr/bin/yt-dlp"):
             with patch("sys.argv", ["bcdl", "testuser"]):
                 with patch("bcdl.get_all_collection_items", return_value=[ITEM_A_WITH_ID]):
-                    with patch("bcdl.download_item", return_value=False):
+                    with patch("bcdl.download_with_retry", return_value=(False, "download error")):
                         bcdl.main()
         state_file = tmp_path / ".bcdl" / "testuser.json"
         if state_file.exists():
@@ -467,3 +475,159 @@ class TestRunYtDlp:
             rc, stderr = bcdl._run_yt_dlp(["yt-dlp", "url"])
         assert rc == 0
         assert stderr == ""
+
+
+# ---------------------------------------------------------------------------
+# download_with_retry
+# ---------------------------------------------------------------------------
+
+class TestRetryLogic:
+    def test_success_first_attempt(self):
+        with patch("bcdl._run_yt_dlp", return_value=(0, "")) as mock_run:
+            with patch("bcdl._backoff_delay"):
+                success, reason = bcdl.download_with_retry(ITEM_A_WITH_ID, 1, 3)
+        assert success is True
+        assert reason == ""
+        assert mock_run.call_count == 1
+
+    def test_transient_retry_then_success(self):
+        with patch("bcdl._run_yt_dlp", side_effect=[(1, "ERROR: HTTP Error 429"), (0, "")]) as mock_run:
+            with patch("bcdl._backoff_delay"):
+                success, reason = bcdl.download_with_retry(ITEM_A_WITH_ID, 1, 3)
+        assert success is True
+        assert reason == ""
+        assert mock_run.call_count == 2
+
+    def test_permanent_no_retry(self):
+        with patch("bcdl._run_yt_dlp", return_value=(1, "ERROR: HTTP Error 404: Not Found")) as mock_run:
+            with patch("bcdl._backoff_delay"):
+                success, reason = bcdl.download_with_retry(ITEM_A_WITH_ID, 1, 3)
+        assert success is False
+        assert "HTTP Error 404" in reason
+        assert mock_run.call_count == 1
+
+    def test_unknown_no_retry(self):
+        with patch("bcdl._run_yt_dlp", return_value=(1, "ERROR: something weird")) as mock_run:
+            with patch("bcdl._backoff_delay"):
+                success, reason = bcdl.download_with_retry(ITEM_A_WITH_ID, 1, 3)
+        assert success is False
+        assert isinstance(reason, str)
+        assert mock_run.call_count == 1
+
+    def test_max_retries_exhausted(self):
+        with patch("bcdl._run_yt_dlp", return_value=(1, "ERROR: HTTP Error 429")) as mock_run:
+            with patch("bcdl._backoff_delay"):
+                success, reason = bcdl.download_with_retry(ITEM_A_WITH_ID, 1, 3)
+        assert success is False
+        assert "retried 3x" in reason
+        assert mock_run.call_count == 4  # initial + 3 retries
+
+    def test_no_url_returns_false(self):
+        item_no_url = {"band_name": "Ghost", "album_title": "Phantom"}
+        with patch("bcdl._run_yt_dlp") as mock_run:
+            success, reason = bcdl.download_with_retry(item_no_url, 1, 3)
+        assert success is False
+        assert "no URL" in reason
+        mock_run.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# download_with_retry output
+# ---------------------------------------------------------------------------
+
+class TestDownloadOutput:
+    def test_success_prints_ok(self, capsys):
+        with patch("bcdl._run_yt_dlp", return_value=(0, "")):
+            with patch("bcdl._backoff_delay"):
+                bcdl.download_with_retry(ITEM_A_WITH_ID, 1, 3)
+        captured = capsys.readouterr()
+        assert "[1/3]" in captured.out or "[ 1/ 3]" in captured.out or "1/3" in captured.out
+        assert "Artist One" in captured.out
+        assert ": OK" in captured.out
+
+    def test_failure_prints_failed(self, capsys):
+        with patch("bcdl._run_yt_dlp", return_value=(1, "ERROR: HTTP Error 404: Not Found")):
+            with patch("bcdl._backoff_delay"):
+                bcdl.download_with_retry(ITEM_A_WITH_ID, 1, 3)
+        captured = capsys.readouterr()
+        assert "FAILED (" in captured.out
+
+    def test_retry_prints_notice(self, capsys):
+        with patch("bcdl._run_yt_dlp", side_effect=[(1, "ERROR: HTTP Error 429"), (0, "")]):
+            with patch("bcdl._backoff_delay", return_value=10.0):
+                bcdl.download_with_retry(ITEM_A_WITH_ID, 1, 3)
+        captured = capsys.readouterr()
+        assert "[retry 1/3] waiting" in captured.out
+
+    def test_no_raw_ytdlp_output(self):
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value = MagicMock(returncode=0, stderr="")
+            bcdl.download_with_retry(ITEM_A_WITH_ID, 1, 3)
+        call_kwargs = mock_run.call_args.kwargs
+        assert call_kwargs.get("stdout") == subprocess.DEVNULL
+
+
+# ---------------------------------------------------------------------------
+# main() summary
+# ---------------------------------------------------------------------------
+
+class TestMainSummary:
+    def test_summary_three_counts(self, tmp_path, capsys, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        # Pre-populate state with ITEM_A_WITH_ID so it gets skipped
+        state_dir = tmp_path / ".bcdl"
+        state_dir.mkdir()
+        state_file = state_dir / "testuser.json"
+        state_file.write_text(json.dumps({
+            "11111111": {
+                "artist": "Artist One",
+                "title": "Album One",
+                "url": "https://artistone.bandcamp.com/album/album-one",
+                "downloaded_at": "2026-03-19T12:00:00+00:00",
+            }
+        }), encoding="utf-8")
+        # ITEM_A_WITH_ID will be skipped (in state), ITEM_B_WITH_ID downloaded, ITEM_C_WITH_ID failed
+        download_side_effects = [(True, ""), (False, "HTTP Error 404")]
+        with patch("shutil.which", return_value="/usr/bin/yt-dlp"):
+            with patch("sys.argv", ["bcdl", "testuser"]):
+                with patch("bcdl.get_all_collection_items", return_value=[ITEM_A_WITH_ID, ITEM_B_WITH_ID, ITEM_C_WITH_ID]):
+                    with patch("bcdl.download_with_retry", side_effect=download_side_effects):
+                        bcdl.main()
+        captured = capsys.readouterr()
+        assert "Done: 1 downloaded, 1 skipped, 1 failed." in captured.out
+
+    def test_failed_items_listed(self, tmp_path, capsys, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        with patch("shutil.which", return_value="/usr/bin/yt-dlp"):
+            with patch("sys.argv", ["bcdl", "testuser"]):
+                with patch("bcdl.get_all_collection_items", return_value=[ITEM_A_WITH_ID]):
+                    with patch("bcdl.download_with_retry", return_value=(False, "HTTP Error 404")):
+                        bcdl.main()
+        captured = capsys.readouterr()
+        assert "Artist One" in captured.out
+        assert "Album One" in captured.out
+        assert "HTTP Error 404" in captured.out
+
+    def test_all_skipped_summary(self, tmp_path, capsys, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        state_dir = tmp_path / ".bcdl"
+        state_dir.mkdir()
+        state_file = state_dir / "testuser.json"
+        state_file.write_text(json.dumps({
+            "11111111": {
+                "artist": "Artist One", "title": "Album One",
+                "url": "https://example.com", "downloaded_at": "2026-03-19T12:00:00+00:00",
+            },
+            "22222222": {
+                "artist": "Artist Two", "title": "Track Two",
+                "url": "https://example.com", "downloaded_at": "2026-03-19T12:00:00+00:00",
+            },
+        }), encoding="utf-8")
+        with patch("shutil.which", return_value="/usr/bin/yt-dlp"):
+            with patch("sys.argv", ["bcdl", "testuser"]):
+                with patch("bcdl.get_all_collection_items", return_value=[ITEM_A_WITH_ID, ITEM_B_WITH_ID]):
+                    with patch("bcdl.download_with_retry") as mock_download:
+                        bcdl.main()
+        mock_download.assert_not_called()
+        captured = capsys.readouterr()
+        assert "0 downloaded, 2 skipped, 0 failed" in captured.out
