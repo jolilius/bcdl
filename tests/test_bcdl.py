@@ -631,3 +631,64 @@ class TestMainSummary:
         mock_download.assert_not_called()
         captured = capsys.readouterr()
         assert "0 downloaded, 2 skipped, 0 failed" in captured.out
+
+
+# ---------------------------------------------------------------------------
+# --format flag
+# ---------------------------------------------------------------------------
+
+class TestFormatFlag:
+    def test_format_flac_appends_extract_audio_flags(self):
+        with patch("bcdl._run_yt_dlp", return_value=(0, "")) as mock_run:
+            with patch("bcdl._backoff_delay", return_value=5.0):
+                bcdl.download_with_retry(ITEM_A_WITH_ID, 1, 3, audio_format="flac")
+        cmd = mock_run.call_args.args[0]
+        assert "-x" in cmd
+        assert "--audio-format" in cmd
+        idx = cmd.index("--audio-format")
+        assert cmd[idx + 1] == "flac"
+
+    def test_format_mp3_appends_extract_audio_flags(self):
+        with patch("bcdl._run_yt_dlp", return_value=(0, "")) as mock_run:
+            with patch("bcdl._backoff_delay", return_value=5.0):
+                bcdl.download_with_retry(ITEM_A_WITH_ID, 1, 3, audio_format="mp3")
+        cmd = mock_run.call_args.args[0]
+        assert "-x" in cmd
+        assert "--audio-format" in cmd
+        idx = cmd.index("--audio-format")
+        assert cmd[idx + 1] == "mp3"
+
+    def test_no_format_no_extract_flags(self):
+        with patch("bcdl._run_yt_dlp", return_value=(0, "")) as mock_run:
+            with patch("bcdl._backoff_delay", return_value=5.0):
+                bcdl.download_with_retry(ITEM_A_WITH_ID, 1, 3)
+        cmd = mock_run.call_args.args[0]
+        assert "-x" not in cmd
+        assert "--audio-format" not in cmd
+
+    def test_invalid_format_exits(self, capsys):
+        with patch("shutil.which", return_value="/usr/bin/yt-dlp"):
+            with patch("sys.argv", ["bcdl", "--format", "xyz", "testuser"]):
+                with pytest.raises(SystemExit) as exc:
+                    bcdl.main()
+        assert exc.value.code == 1
+        captured = capsys.readouterr()
+        assert "Error: unsupported format 'xyz'. Choose from: flac, mp3, wav, aac, opus" in captured.err
+
+    def test_format_validates_before_network(self, capsys):
+        with patch("shutil.which", return_value="/usr/bin/yt-dlp"):
+            with patch("sys.argv", ["bcdl", "--format", "xyz", "testuser"]):
+                with patch("requests.get") as mock_get:
+                    with pytest.raises(SystemExit):
+                        bcdl.main()
+        mock_get.assert_not_called()
+
+    def test_format_ignored_with_csv(self, tmp_path, capsys):
+        csv_path = str(tmp_path / "out.csv")
+        with patch("shutil.which", return_value="/usr/bin/yt-dlp"):
+            with patch("sys.argv", ["bcdl", "--format", "flac", "--export-csv", csv_path, "testuser"]):
+                with patch("bcdl.get_all_collection_items", return_value=[ITEM_A_WITH_ID]):
+                    with patch("bcdl.download_with_retry") as mock_download:
+                        with pytest.raises(SystemExit):  # export_csv calls sys.exit(0)
+                            bcdl.main()
+        mock_download.assert_not_called()
