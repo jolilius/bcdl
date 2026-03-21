@@ -48,6 +48,8 @@ PERMANENT_PATTERNS = [
     "Unsupported URL",
 ]
 
+SUPPORTED_FORMATS = ("flac", "mp3", "wav", "aac", "opus")
+
 
 def classify_yt_dlp_error(stderr: str) -> str:
     """Classify yt-dlp stderr as 'transient', 'permanent', or 'unknown'.
@@ -185,6 +187,7 @@ def download_with_retry(
     index: int,
     total: int,
     cookies_file: str | None = None,
+    audio_format: str | None = None,
     max_retries: int = 3,
     base_delay: float = 5.0,
 ) -> tuple[bool, str]:
@@ -200,6 +203,8 @@ def download_with_retry(
     cmd = ["yt-dlp", "--quiet", "--no-progress", url]
     if cookies_file:
         cmd += ["--cookies", cookies_file]
+    if audio_format:
+        cmd += ["-x", "--audio-format", audio_format]
 
     width = len(str(total))
     print(f"[{index:{width}}/{total}] {artist} \u2014 {title}: ", end="", flush=True)
@@ -275,11 +280,24 @@ def main() -> None:
         metavar="FILE",
         help="Export collection to a CSV file instead of downloading",
     )
+    parser.add_argument(
+        "--format",
+        metavar="FORMAT",
+        help=f"Audio format for downloads ({', '.join(SUPPORTED_FORMATS)})",
+    )
     args = parser.parse_args()
 
     if shutil.which("yt-dlp") is None:
         print(
             "Error: yt-dlp is not installed. Install it with: pip install yt-dlp",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    if args.format is not None and args.format not in SUPPORTED_FORMATS:
+        print(
+            f"Error: unsupported format '{args.format}'. "
+            f"Choose from: {', '.join(SUPPORTED_FORMATS)}",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -319,7 +337,11 @@ def main() -> None:
             skipped += 1
             continue
 
-        success, reason = download_with_retry(item, i, len(items), cookies_file=args.cookies)
+        success, reason = download_with_retry(
+            item, i, len(items),
+            cookies_file=args.cookies,
+            audio_format=args.format,
+        )
         if not success:
             failed.append((item, reason))
         elif item_id:
