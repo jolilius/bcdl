@@ -1,70 +1,96 @@
 # bcdl
 
-Download all items from a Bandcamp user's collection.
+Download your entire Bandcamp collection with one command.
 
-## Requirements
+## Prerequisites
 
-- [uv](https://docs.astral.sh/uv/)
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp)
+Before installing bcdl, make sure you have the following:
 
-Install yt-dlp with:
+- **Python 3.12+** — [python.org/downloads](https://www.python.org/downloads/)
+- **pipx** — install via `brew install pipx` (macOS) or `python -m pip install --user pipx`
+  ([pipx docs](https://pipx.pypa.io/stable/installation/))
+- **yt-dlp** — `brew install yt-dlp` or `pip install yt-dlp`
+  ([yt-dlp on GitHub](https://github.com/yt-dlp/yt-dlp))
+- **ffmpeg** — required when using `--format` to convert audio: `brew install ffmpeg`
+
+## Install
+
+### From PyPI (once published)
 
 ```bash
-brew install yt-dlp
+pipx install bcdl
 ```
 
-## Installation
+### From source (current method)
+
+```bash
+git clone https://github.com/jolilius/bcdl.git
+cd bcdl
+uv build --wheel
+pipx install dist/bcdl-0.1.0-py3-none-any.whl
+```
+
+Verify the install:
+
+```bash
+bcdl --help
+```
+
+## Quick Start
+
+```bash
+bcdl your-username --cookies cookies.txt
+```
+
+This downloads every item in your collection, skips anything already downloaded, and waits 10 seconds between downloads to be polite to Bandcamp's servers.
+
+## Getting Your Cookies File
+
+Purchased content requires authentication. To download items you own:
+
+1. Install the **[Get cookies.txt LOCALLY](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc)** Chrome extension
+2. Log in to [bandcamp.com](https://bandcamp.com)
+3. Click the extension icon while on bandcamp.com
+4. Click **Export** to save the file as `cookies.txt`
+5. Move the file to the directory where you want to run bcdl
+6. Run:
+
+```bash
+bcdl your-username --cookies cookies.txt
+```
+
+## Options
+
+| Flag | Default | Description | Example |
+|------|---------|-------------|---------|
+| `--cookies FILE` | — | Netscape cookies file for purchased content | `bcdl user --cookies cookies.txt` |
+| `--format FORMAT` | best available | Audio format: flac, mp3, wav, aac, opus | `bcdl user --format flac --cookies cookies.txt` |
+| `--delay SECONDS` | 10 | Wait time in seconds between downloads | `bcdl user --delay 30 --cookies cookies.txt` |
+| `--export-csv FILE` | — | Export collection to CSV (no download) | `bcdl user --export-csv collection.csv` |
+
+## How It Works
+
+### Resume
+
+bcdl remembers what it has already downloaded. State is stored in `.bcdl/{username}.json`. If interrupted (Ctrl-C), just run the same command again — it picks up where it left off. Already-downloaded items are skipped automatically.
+
+### Output format
+
+Each item shows `[N/M] Artist — Title: OK` or `FAILED`. Transient errors (rate limits, timeouts) are retried automatically up to 3 times before marking an item as failed.
+
+### Summary
+
+After each run, a summary shows total downloaded, skipped, and failed counts:
+
+```
+Done: 42 downloaded, 10 skipped, 1 failed.
+```
+
+## Development
 
 ```bash
 git clone https://github.com/jolilius/bcdl.git
 cd bcdl
 uv sync
-```
-
-If you use [direnv](https://direnv.net/), the virtualenv is activated automatically when you enter the directory. Otherwise activate it manually:
-
-```bash
-source .venv/bin/activate
-```
-
-## Usage
-
-### Download a collection
-
-```bash
-bcdl <username>
-```
-
-Downloads every item in the user's public Bandcamp collection, one at a time, with a 10-second pause between each download.
-
-### Export collection to CSV
-
-```bash
-bcdl <username> --export-csv collection.csv
-```
-
-Saves the collection as a CSV file (columns: `artist`, `title`, `url`, `item_type`) without downloading any audio.
-
-### Downloading purchased content
-
-Purchased items require authentication. Export your browser cookies in Netscape format (e.g. with the [Get cookies.txt LOCALLY](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc) Chrome extension) and pass them with `--cookies`:
-
-```bash
-bcdl <username> --cookies cookies.txt
-```
-
-### Options
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--cookies FILE` | — | Netscape cookies file for purchased content |
-| `--export-csv FILE` | — | Export collection to CSV instead of downloading |
-| `--delay SECONDS` | `10` | Seconds to wait between downloads |
-
-## Development
-
-Run the test suite:
-
-```bash
 uv run pytest
 ```
