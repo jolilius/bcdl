@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: State Foundation** - Add StateManager and harden existing error paths before any new features (completed 2026-03-19)
 - [x] **Phase 2: Download Reliability** - Retry logic and yt-dlp output capture ship together as one coupled unit (completed 2026-03-20)
-- [ ] **Phase 3: Feature Completion and Release** - Format selection, resume wiring, README, and packaging verification
+- [x] **Phase 3: Feature Completion and Release** - Format selection, resume wiring, README, and packaging verification (completed 2026-03-21)
 
 ## Phase Details
 
@@ -53,11 +53,11 @@ Plans:
   1. `bcdl --format flac username` downloads in FLAC where available; `--format mp3` downloads in MP3
   2. `pipx install bcdl` installs the tool and `bcdl --help` works from a clean environment
   3. The README documents every flag with a concrete usage example, and a non-developer Bandcamp user can follow it to completion without needing to read the source
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 Plans:
-- [ ] 03-01-PLAN.md — TDD: --format flag (tests first, then implementation)
-- [ ] 03-02-PLAN.md — README rewrite for non-developer users + GitHub Actions CI
-- [ ] 03-03-PLAN.md — Packaging smoke test (wheel build + pipx install verification)
+- [x] 03-01-PLAN.md — TDD: --format flag (tests first, then implementation)
+- [x] 03-02-PLAN.md — README rewrite for non-developer users + GitHub Actions CI
+- [x] 03-03-PLAN.md — Packaging smoke test (wheel build + pipx install verification)
 
 ## Progress
 
@@ -68,4 +68,4 @@ Phases execute in numeric order: 1 -> 2 -> 3
 |-------|----------------|--------|-----------|
 | 1. State Foundation | 1/1 | Complete    | 2026-03-19 |
 | 2. Download Reliability | 2/2 | Complete   | 2026-03-20 |
-| 3. Feature Completion and Release | 2/3 | In Progress|  |
+| 3. Feature Completion and Release | 3/3 | Complete   | 2026-03-21 |
