@@ -15,11 +15,11 @@
 
 ### Download Control
 
-- [ ] **DCTL-01**: User can specify audio format via `--format` flag (e.g. `flac`, `mp3`) passed through to yt-dlp
+- [x] **DCTL-01**: User can specify audio format via `--format` flag (e.g. `flac`, `mp3`) passed through to yt-dlp
 
 ### Documentation
 
-- [ ] **DOCS-01**: README documents all flags with usage examples and install instructions clear enough for a non-developer Bandcamp user
+- [x] **DOCS-01**: README documents all flags with usage examples and install instructions clear enough for a non-developer Bandcamp user
 
 ## v2 Requirements
 
@@ -63,8 +63,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | RELY-01 | Phase 2 | Complete |
 | RESM-01 | Phase 1 | Complete |
-| DCTL-01 | Phase 3 | Pending |
-| DOCS-01 | Phase 3 | Pending |
+| DCTL-01 | Phase 3 | Complete |
+| DOCS-01 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 4 total

@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Phase 03 context gathered
-last_updated: "2026-03-20T13:35:28.501Z"
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-03-21T08:18:26.812Z"
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 6
+  completed_plans: 5
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Any Bandcamp buyer can sync their full collection with one command, picking up where they left off if interrupted.
-**Current focus:** Phase 02 — download-reliability
+**Current focus:** Phase 03 — feature-completion-and-release
 
 ## Current Position
 
-Phase: 02 (download-reliability) — COMPLETE
-Plan: 2 of 2 (all plans complete)
+Phase: 03 (feature-completion-and-release) — EXECUTING
+Plan: 2 of 3
 
 ## Performance Metrics
 
@@ -49,6 +49,7 @@ Plan: 2 of 2 (all plans complete)
 | Phase 01-state-foundation P01 | 2 | 2 tasks | 2 files |
 | Phase 02-download-reliability P01 | 2 | 1 tasks | 2 files |
 | Phase 02-download-reliability P02 | 3 | 1 tasks | 2 files |
+| Phase 03-feature-completion-and-release P01 | 2 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,11 @@ Recent decisions affecting current work:
 - [Phase 02-download-reliability]: TRANSIENT_PATTERNS checked after PERMANENT_PATTERNS so mixed-signal stderr (403 + 429) returns permanent
 - [Phase 02-download-reliability]: HTTP Error 5 prefix pattern covers all 5xx codes (500/502/503/504) with a single TRANSIENT_PATTERNS entry
 - [Phase 02-download-reliability]: _backoff_delay returns float so retry notice can print it; test patches need return_value=float to avoid :.0f format TypeError on MagicMock
+- [Phase 03-02-docs]: pipx install is primary install path; uv/git-clone moved to Development section for contributors only
+- [Phase 03-02-docs]: CI uses astral-sh/setup-uv@v7 with enable-cache; Python 3.12 only via pyproject.toml requires-python (no matrix)
+- [Phase 03-02-docs]: Get cookies.txt LOCALLY extension named explicitly with direct Chrome Web Store link
+- [Phase 03-feature-completion-and-release]: audio_format parameter name chosen over 'format' to avoid shadowing Python built-in
+- [Phase 03-feature-completion-and-release]: Format validation occurs after yt-dlp check but before any network call (requests.get never called on invalid format)
 
 ### Pending Todos
 
@@ -79,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T13:35:28.493Z
-Stopped at: Phase 03 context gathered
-Resume file: .planning/phases/03-feature-completion-and-release/03-CONTEXT.md
+Last session: 2026-03-21T08:18:26.808Z
+Stopped at: Completed 03-01-PLAN.md
+Resume file: None
